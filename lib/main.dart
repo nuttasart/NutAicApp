@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:nutaicapp/router.dart';
 import 'package:nutaicapp/widget/authen.dart';
 
 void main() {
@@ -8,8 +10,13 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Authen(),
+    SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown
+    ]);
+    return MaterialApp(debugShowCheckedModeBanner: false,
+      routes: rounts, initialRoute: '/authen',
+      //home: Authen(),
     );
   }
 }
