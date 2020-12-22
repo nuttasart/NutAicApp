@@ -1,5 +1,12 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:nutaicapp/models/usermodel.dart';
+import 'package:nutaicapp/utility/dialog.dart';
+import 'package:nutaicapp/utility/myconstant.dart';
+import 'package:nutaicapp/utility/mystyle.dart';
 
 class Authen extends StatefulWidget {
   @override
@@ -7,7 +14,9 @@ class Authen extends StatefulWidget {
 }
 
 class _AuthenState extends State<Authen> {
-  bool statusRedEye = true;
+  bool statusRedEye = true, statusProgress = true;
+  String user, password;
+  int count = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +33,30 @@ class _AuthenState extends State<Authen> {
                 Colors.grey.shade700
               ]),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                buildLogo(),
-                buildSnorlax(),
-                buildAppName(),
-                buildUser(),
-                buildPassword(),
-                buildLogin(),
-                buildRegister()
-              ],
-            ),
-          ),
+        child: Stack(
+          children: [
+            buildContent(),
+            statusProgress ? SizedBox() : MyStyle().showProgess(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Center buildContent() {
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            buildLogo(),
+            buildSnorlax(),
+            buildAppName(),
+            buildUser(),
+            buildPassword(),
+            buildLogin(),
+            buildRegister()
+          ],
         ),
       ),
     );
@@ -55,7 +73,17 @@ class _AuthenState extends State<Authen> {
       margin: EdgeInsets.only(top: 10),
       width: 250,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          if ((user?.isEmpty ?? true) || (password?.isEmpty ?? true)) {
+            normalDialog(
+                context, 'Don\'t give me space!!! \n\nอย่าส่งค่าว่างให้ฉัน!!!');
+          } else {
+            setState(() {
+              statusProgress = false;
+            });
+            checkAuthen();
+          }
+        },
         child: Text('Login'),
       ),
     );
@@ -66,6 +94,7 @@ class _AuthenState extends State<Authen> {
       margin: EdgeInsets.only(top: 16),
       width: 250,
       child: TextField(
+        onChanged: (value) => password = value.trim(),
         autofocus: false,
         obscureText: statusRedEye,
         decoration: InputDecoration(
@@ -91,6 +120,7 @@ class _AuthenState extends State<Authen> {
       margin: EdgeInsets.only(top: 16),
       width: 250,
       child: TextField(
+        onChanged: (value) => user = value.trim(),
         decoration: InputDecoration(
           prefixIcon: Icon(Icons.rowing),
           border: OutlineInputBorder(),
@@ -123,5 +153,46 @@ class _AuthenState extends State<Authen> {
       width: 100,
       child: Image.asset('images/snorlax.png'),
     );
+  }
+
+  Future<Null> checkAuthen() async {
+    String path =
+        '${MyConstant().domain}/aic/getUserWhereUser.php?isAdd=true&user=$user';
+    await Dio().get(path).then((value) {
+      if (value.toString() == 'null') {
+        count++;
+        checkCount();
+        setState(() {
+          statusProgress = true;
+        });
+        normalDialog(context,
+            'You don\'t have username in my application. Just register \n\nไปสมัครสมาชิกซะ');
+      } else {
+        print('value = $value');
+        var result = json.decode(value.data);
+        print('result = $result');
+        //normalDialog(context, result.toString());
+        for (var item in result) {
+          print('item = $item');
+          UserModel model = UserModel.fromMap(item);
+          if (model.password == password) {
+            normalDialog(context, 'กล้ามาก เก่งมาก ขอบใจ');
+          } else {
+            count++;
+            checkCount();
+            normalDialog(context, 'จำรหัสไม่ได้หละสิ $count');
+          }
+          setState(() {
+            statusProgress = true;
+          });
+        }
+      }
+    });
+  }
+
+  void checkCount() {
+    if (count >= 4) {
+      normalDialog(context, 'Login เกิน ($count ครั้ง)');
+    }
   }
 }
