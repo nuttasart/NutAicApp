@@ -7,6 +7,7 @@ import 'package:nutaicapp/models/usermodel.dart';
 import 'package:nutaicapp/utility/dialog.dart';
 import 'package:nutaicapp/utility/myconstant.dart';
 import 'package:nutaicapp/utility/mystyle.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Authen extends StatefulWidget {
   @override
@@ -158,7 +159,7 @@ class _AuthenState extends State<Authen> {
   Future<Null> checkAuthen() async {
     String path =
         '${MyConstant().domain}/aic/getUserWhereUser.php?isAdd=true&user=$user';
-    await Dio().get(path).then((value) {
+    await Dio().get(path).then((value) async {
       if (value.toString() == 'null') {
         count++;
         checkCount();
@@ -176,7 +177,25 @@ class _AuthenState extends State<Authen> {
           print('item = $item');
           UserModel model = UserModel.fromMap(item);
           if (model.password == password) {
-            normalDialog(context, 'กล้ามาก เก่งมาก ขอบใจ');
+            print('Login Success');
+
+            SharedPreferences preferences =
+                await SharedPreferences.getInstance();
+            preferences.setString(MyConstant().keyName, model.name);
+            preferences.setString(MyConstant().keyType, model.typeuser);
+            preferences.setString('id', model.id);
+
+            switch (model.typeuser) {
+              case 'User':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/serviceuser', (route) => false);
+                break;
+              case 'Officer':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/serviceofficer', (route) => false);
+                break;
+              default:
+            }
           } else {
             count++;
             checkCount();
